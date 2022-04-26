@@ -85,17 +85,18 @@ class Statistic:
 
 
         ## gets current price and see's if it crossed the ave
-        startDate = datetime.date.today() -  datetime.timedelta(1)
-        bars = api.get_bars(symbol=tkr, timeframe=alpaca.TimeFrame(15, alpaca.TimeFrameUnit.Minute),start=startDate.isoformat())
+        startDate = datetime.date.today()
+        calenderEntity = api.get_calendar(start= startDate- datetime.timedelta(2*period), end=startDate) 
+        numDays = len(calenderEntity)
+
+        bars = api.get_bars(symbol=tkr, timeframe=alpaca.TimeFrame(15, alpaca.TimeFrameUnit.Minute),start=(startDate - datetime.timedelta(1)).isoformat())
 
         numDataPoints = len(bars)
         prevPrice = float(bars[numDataPoints-1]._raw['c'])
         currPrice = float(api.get_latest_trade(symbol=tkr)._raw["p"])
 
-
-        priceMovedAboveAve =  float(movingAverage[str(startDate)]['SMA']) < currPrice and float(movingAverage[str(startDate - datetime.timedelta(1))]['SMA']) > prevPrice
-        priceMovedBelowAve =  float(movingAverage[str(startDate)]['SMA']) > currPrice and float(movingAverage[str(startDate - datetime.timedelta(1
-        ))]['SMA']) < prevPrice
+        priceMovedAboveAve =  float(movingAverage[calenderEntity[numDays-2]._raw["date"]]['SMA']) < currPrice and float(movingAverage[calenderEntity[numDays-3]._raw["date"]]['SMA']) > prevPrice
+        priceMovedBelowAve =  float(movingAverage[calenderEntity[numDays-2]._raw["date"]]['SMA']) > currPrice and float(movingAverage[calenderEntity[numDays-3]._raw["date"]]['SMA']) < prevPrice
         
         if priceMovedAboveAve: return 1
         elif priceMovedBelowAve: return -1
@@ -149,7 +150,6 @@ def main(mytimer: func.TimerRequest) -> None:
 
 
     api = alpaca.REST(key_id=os.environ["apiKey"], secret_key=os.environ["apiSecret"], api_version='v2')
-
 
     sender_address = 'alpacatradebot@gmail.com' 
     sender_pass = os.environ["emailPassword"]
@@ -208,4 +208,8 @@ def main(mytimer: func.TimerRequest) -> None:
                 session.sendmail(sender_address, receiver_address, text)
                 session.quit()
                 logging.info("Email sent")  
+
+
+
+
 
